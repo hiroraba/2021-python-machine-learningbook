@@ -9,7 +9,7 @@ import numpy as np
 iris = datasets.load_iris()
 
 #3,4番目の特徴量
-X = iris.data[:, [2, 3]]
+X = iris.data[:, [2, 3]].
 
 #クラスラベル
 Y = iris.target
@@ -60,7 +60,6 @@ ppn = Perceptron(eta0=0.1, random_state=1)
 
 # 訓練データをモデルに適合
 ppn.fit(X_train_std, Y_train)
-
 # テストデータで予測を実施
 y_pred = ppn.predict(X_test_std)
 print('誤分類したデータの数: %d' % (Y_test != y_pred).sum())
