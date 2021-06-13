@@ -9,7 +9,7 @@ import numpy as np
 iris = datasets.load_iris()
 
 #3,4番目の特徴量
-X = iris.data[:, [2, 3]].
+X = iris.data[:, [2, 3]]
 
 #クラスラベル
 Y = iris.target
