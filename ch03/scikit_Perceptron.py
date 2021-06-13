@@ -41,7 +41,7 @@ from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
 
 # 訓練データの平均と標準偏差を計算
-sc.fit(X_train)
+sc.fit(X_train) 
 
 # 平均と標準偏差から、データを標準化
 X_train_std = sc.transform(X_train)
