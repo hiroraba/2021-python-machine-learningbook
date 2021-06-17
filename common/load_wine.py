@@ -19,7 +19,7 @@ def load_wine():
 
     # 訓練データとテストデータに分割(30%をテストデータにする)   
     # stratify=y 出力値（クラスラベル）が均等になるように
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0, stratify=y)
 
 
     # 標準化: 平均0, 標準偏差1になるようにスケーリングする
