@@ -107,8 +107,8 @@ plt.grid()
 plt.tight_layout()
 plt.show()
 
-# 4次元が100%の正答率
-k4 = list(sbs.subsets_[9])
+# 3次元が100%の正答率
+k4 = list(sbs.subsets_[10])
 
 knn.fit(X_train_std, y_train)
 print('Training Accuracy:', knn.score(X_train_std, y_train))
