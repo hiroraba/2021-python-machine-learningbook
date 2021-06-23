@@ -83,20 +83,26 @@ f, axarr = plt.subplots(nrows=1, ncols=2, sharex='col', sharey='row', figsize=(8
 for idx, clf, tt in zip([0, 1], [tree, ada], ['Decision Tree', 'AdaBoost']):
     clf.fit(X_train, y_train)
     
+    # 描画領域のすべてのデータ点についてクラスラベルを予測する
     z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
     z = z.reshape(xx.shape)
 
+    # クラスラベル間の決定領域を描画するために等高線を引く
     axarr[idx].contourf(xx, yy, z, alpha=0.3)
+
+    # 訓練データをプロットする(クラス1)
     axarr[idx].scatter(X_train[y_train==0, 0],
-                                  X_train[y_train==0, 1],
-                                  c='blue',
-                                  marker='^',
-                                  s=50)
+                       X_train[y_train==0, 1],
+                       c='blue',
+                       marker='^',
+                       s=50)
+
+    # 訓練データをプロットする(クラス2)
     axarr[idx].scatter(X_train[y_train==1, 0],
-                                  X_train[y_train==1, 1],
-                                  c='green',
-                                  marker='o',
-                                  s=50)
+                       X_train[y_train==1, 1],
+                       c='green',
+                       marker='o',
+                       s=50)
     axarr[idx].set_title(tt)
 
 axarr[0].set_ylabel('Alcohol', fontsize=12)
