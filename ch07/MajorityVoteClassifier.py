@@ -2,6 +2,7 @@
 """ 7.2.1 - 単純な多数決分類器を実装する """
 
 from scipy.sparse.construct import random
+from sklearn import linear_model
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
@@ -176,3 +177,76 @@ print('10-fold cross validation')
 for clf, label in zip([pipe1, clf2, pipe3, mv_clf], clf_labels):
     scores = cross_val_score(estimator=clf, X=X_train, y=y_train, cv=10, scoring='roc_auc')
     print("ROC AUC: %0.2f (+/- %0.2f) [%s]" % (scores.mean(), scores.std(), label))
+
+
+""" 7.3 -  アンサンブル分類器の評価とチューニング """
+# テストデータセットからROC曲線を計算し、MajorityVoteClassifierが未知のデータに
+# うまく汎化するか確認する
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+colors = ['black', 'orange', 'blue', 'green']
+linestyles = [':', '--' , '-.', '-']
+
+for clf, label, clr, ls in zip([pipe1, clf2, pipe3, mv_clf], clf_labels, colors, linestyles):
+    # 陽性クラスのラベルは1であることが前提
+    y_pred = clf.fit(X_train, y_train).predict_proba(X_test)[:, 1]
+    fpr, tpr, threshold = roc_curve(y_true=y_test, y_score=y_pred)
+    roc_auc = auc(x=fpr, y=tpr)
+    plt.plot(fpr, tpr, color=clr, linestyle=ls, label='%s (auc = %0.2f)' % (label, roc_auc))
+
+plt.legend(loc='lower right')
+plt.plot([0,1], [0,1], linestyle='--', color='gray', linewidth=2)
+plt.xlim([-0.1, 1.1])
+plt.ylim([-0.1, 1.1])
+plt.grid(alpha=0.5)
+plt.xlabel('False Positive rate(FPR)')
+plt.ylabel('Talse Positive rate(TPR)')
+plt.tight_layout()
+plt.show()
+
+# 各分類器の決定領域を描画してみる
+
+sc = StandardScaler()
+
+## 決定木の決定領域の尺度を揃えるために訓練データを標準化 
+X_train_std = sc.fit_transform(X_train)
+
+from itertools import product
+
+# 決定領域を描画する最小値、最大値を生成
+x_min = X_train_std[:, 0].min() - 1
+x_max = X_train_std[:, 0].max() + 1
+y_min = X_train_std[:, 1].min() - 1
+y_max = X_train_std[:, 1].max() + 1
+
+# グリッドポイントを生成
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1),
+                     np.arange(y_min, y_max, 0.1))
+
+# 描画領域を2行2列に分割
+f, axarr = plt.subplots(nrows=2, ncols=2, sharex='col', sharey='row', figsize=(7, 5))
+
+# 決定領域のプロット、赤や青の散布図の作成などを実行
+# 変数idxは各分類器を描画する行と列の位置を表すタプル
+
+for idx, clf, tt in zip(product([0, 1] ,[0 ,1]), [pipe1, clf2, pipe3, mv_clf], clf_labels):
+    clf.fit(X_train_std, y_train)
+    
+    z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    z = z.reshape(xx.shape)
+
+    axarr[idx[0], idx[1]].contourf(xx, yy, z, alpha=0.3)
+    axarr[idx[0], idx[1]].scatter(X_train_std[y_train==0, 0],
+                                  X_train_std[y_train==0, 1],
+                                  c='blue',
+                                  marker='^',
+                                  s=50)
+    axarr[idx[0], idx[1]].scatter(X_train_std[y_train==1, 0],
+                                  X_train_std[y_train==1, 1],
+                                  c='green',
+                                  marker='o',
+                                  s=50)
+    axarr[idx[0], idx[1]].set_title(tt)
+
+plt.show()
