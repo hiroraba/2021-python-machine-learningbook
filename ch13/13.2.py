@@ -49,7 +49,7 @@ t4 = tf.math.reduce_mean(t1, axis=0)
 print(t4)
 
 # 行列の積
-t5 = tf.linalg.matmul(t1, t2, transpose_b=True)ß
+t5 = tf.linalg.matmul(t1, t2, transpose_b=True)
 print(t5) #(5, 5)
 
 t6 = tf.linalg.matmul(t1, t2, transpose_a=True)
