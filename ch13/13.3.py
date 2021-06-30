@@ -129,11 +129,11 @@ celeba_bldr = tfds.builder('celeb_a')
 print(celeba_bldr.info.features)
 
 # データセットをダウンロード
-# celeba_bldr.download_and_prepare()
+celeba_bldr.download_and_prepare()
 
 # データセットをインスタンス化
-# datasets = celeba_bldr.as_dataset(shuffle_files=False)
-# print(datasets.keys)
+datasets = celeba_bldr.as_dataset(shuffle_files=False)
+print(datasets.keys)
 
 # MNISTデータセットを取得
 mnist, mnist_info = tfds.load('mnist', with_info=True, shuffle_files=False)

@@ -100,3 +100,13 @@ plt.plot(Ws, lw=3)
 plt.plot(bs, lw=3)
 plt.legend(['Weight w', 'Bias unit b'], fontsize=15)
 plt.show()
+
+""" 13.4.3 - compileとfitを使ってモデルを訓練する """
+
+tf.random.set_seed(1)
+model = MyModel()
+model.compile(optimizer='sgd',
+              loss=loss_fn,
+              metrics=['mae', 'mse'])
+
+model.fit(X_train_norm, y_train, epochs=num_epochs, batch_size=batch_size, verbose=1)
