@@ -1,6 +1,7 @@
 """ 14.6 - TensorFlow Estimator """
 
 # データの読み込み
+from os import name
 import tensorflow as tf
 import pandas as pd
 from tensorflow._api.v2 import feature_column
@@ -129,6 +130,7 @@ pred_res = regressor.predict(input_fn=lambda: eval_input_fn(df_test_norm, batch_
 print(next(iter(pred_res))) 
 
 # ブースト決定木アルゴリズム
+"""
 boosted_tree = tf.estimator.BoostedTreesRegressor(
     feature_columns=all_feature_columns,
     n_batches_per_layer=20,
@@ -139,3 +141,4 @@ eval_results = boosted_tree.evaluate(
     input_fn=lambda:eval_input_fn(df_test_norm, batch_size=8)
 )
 print('Average-Loss: {:.4f}'.format(eval_results['average_loss']))
+"""
