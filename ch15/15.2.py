@@ -3,6 +3,7 @@ from math import log
 from tensorflow import keras
 import tensorflow as tf
 from tensorflow.python.ops.parallel_for.control_flow_ops import _loop_fn_has_config
+
 # 畳み込みネットワークでl2正則化する方法
 conv_layer = keras.layers.Conv2D(filters=16,
                                  kernel_size=(3, 3),
