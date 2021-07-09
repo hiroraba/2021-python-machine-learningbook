@@ -1,7 +1,9 @@
 """ 16.3 - リカレントニューラルネットワークの実装: tensorFlowでのシーケンスモデルの構築 """
 
 ## 映画レビューデータの準備
+from numpy.lib.npyio import recfromcsv
 import tensorflow as tf
+from tensorflow.python.keras.backend import rnn
 from tensorflow.python.ops.gen_math_ops import mod
 import tensorflow_datasets as tfds
 import numpy as np
@@ -116,7 +118,7 @@ bi_lstm_model = tf.keras.Sequential([
     tf.keras.layers.Embedding(input_dim=vocab_size,
                               output_dim=embedding_dim,
                               name='embed-layer'),
-    # Bidirectionalにすると双方向（入力シーケンスを順方向と逆方向が2つになる）
+    # Bidirectionalにすると双方向になる（入力シーケンスが順方向と逆方向が2つになる）
     tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, 
                                                        name='lstm-layer'),
                                   name='bidir-lstm'),
@@ -130,9 +132,139 @@ bi_lstm_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
                       loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
                       metrics=['accuracy'])
 history = bi_lstm_model.fit(train_data, 
-                            validation_data=valid_data, 
-                            epochs=10)
+                           validation_data=valid_data, 
+                           epochs=10)
 
 ## テストデータで評価
 test_results = bi_lstm_model.evaluate(test_data)
 print('Test Acc.: {:.2f}%'.format(test_results[1]*100))
+
+from collections import Counter
+
+# 感情分析に重要な情報が含まれているのは最後の段落という仮設をたて、最後の100個のトークンのみを学習データとする
+def preprocess_datasets(ds_raw_train, ds_raw_valid, ds_raw_test, max_seq_length=None, batch_size=32):
+    ## 手順2: 一意なトークンを特定
+    tokenizer = tfds.deprecated.text.Tokenizer()
+    token_counts = Counter()
+    
+    for example in ds_raw_train:
+        tokens = tokenizer.tokenize(example[0].numpy()[0])
+        if max_seq_length is not None:
+            tokens = tokens[-max_seq_length:]
+        token_counts.update(tokens)
+        
+    print('Vocab-size:', len(token_counts))
+    
+    ## 手順3: テキストをエンコード
+    encoder = tfds.deprecated.text.TokenTextEncoder(token_counts)
+    
+    ## 手順3-A: 変換用の関数を定義
+    def encode(text_tensor, label):
+        text = text_tensor.numpy()[0]
+        encoded_text = encoder.encode(text)
+        if max_seq_length is not None:
+            encoded_text = encoded_text[-max_seq_length:]
+        return encoded_text, label
+
+    ## 手順3-B: encode関数をラッピングしてTensorFlow演算子に変換
+    def encode_map_fn(text, label):
+        return tf.py_function(encode, inp=[text, label], Tout=(tf.int64, tf.int64))
+    
+    ds_train = ds_raw_train.map(encode_map_fn)
+    ds_valid = ds_raw_valid.map(encode_map_fn)
+    ds_test = ds_raw_test.map(encode_map_fn)
+    
+    ## データセットをバッチ分割
+    train_data = ds_train.padded_batch(batch_size, padded_shapes=([-1], []))
+    valid_data = ds_valid.padded_batch(batch_size, padded_shapes=([-1], []))
+    test_data = ds_test.padded_batch(batch_size, padded_shapes=([-1], []))
+    
+    return (train_data, valid_data, test_data, len(token_counts))
+
+from tensorflow.keras.layers import Embedding, Bidirectional, SimpleRNN, LSTM, GRU
+
+def build_rnn_model(embedding_dim, 
+                    vocab_size, 
+                    recurrent_type='SimpleRNN',
+                    n_recurrent_units=64,
+                    n_recurrent_layers=1,
+                    bidirectional=True):
+    
+    tf.random.set_seed(1)
+    
+    ## モデルを構築
+    model = tf.keras.Sequential()
+    model.add(Embedding(input_dim=vocab_size, output_dim=embedding_dim, name='embed-layer'))
+    
+    for i in range(n_recurrent_layers):
+        return_sequences = (i < n_recurrent_layers-1)
+        
+        if recurrent_type == 'SimpleRNN':
+            recurrent_layer = SimpleRNN(units=n_recurrent_units,
+                                        return_sequences=return_sequences,
+                                        name='simprnn-layer-{}'.format(i))
+        elif recurrent_type == 'LSTM':
+            recurrent_layer = LSTM(units=n_recurrent_units,
+                                        return_sequences=return_sequences,
+                                        name='lstm-layer-{}'.format(i))
+        elif recurrent_type == 'GRU':
+            recurrent_layer = GRU(units=n_recurrent_units,
+                                        return_sequences=return_sequences,
+                                        name='gru-layer-{}'.format(i))
+        
+        if bidirectional:
+            recurrent_layer = Bidirectional(recurrent_layer,name='bidir-' + recurrent_layer.name)
+        
+        model.add(recurrent_layer)
+        
+    model.add(tf.keras.layers.Dense(64, activation='relu'))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    
+    return model
+
+batch_size = 32
+embedding_dim = 20
+max_seq_length = 100
+recurrent_type = "SimpleRNN"
+bidirectional = True
+train_data, valid_data, test_data, n = preprocess_datasets(ds_raw_train, 
+                                                           ds_raw_valid, 
+                                                           ds_raw_test,
+                                                           max_seq_length=max_seq_length,
+                                                           batch_size=batch_size)
+
+vocab_size = n + 2
+
+rnn_model = build_rnn_model(embedding_dim, 
+                            vocab_size, 
+                            recurrent_type='SimpleRNN',
+                            bidirectional=bidirectional)
+rnn_model.summary()
+
+rnn_model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
+                  loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
+                  metrics=['accuracy'])
+history = rnn_model.fit(train_data, validation_data=valid_data, epochs=10)
+hist = history.history
+results = rnn_model.evaluate(test_data)
+print_results = 'Test Acc: {:.2f}%'.format(results[1]*100)
+import matplotlib.pyplot as plt
+
+x_arr = np.arange(len(hist['loss'])) + 1
+fig = plt.figure(figsize=(12, 4))
+
+ax = fig.add_subplot(1, 2, 1)
+ax.plot(x_arr, hist['loss'], '-o', label='Train Loss')
+ax.plot(x_arr, hist['val_loss'], '--<', label='Validation Loss')
+ax.legend(fontsize=15)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Loss')
+
+ax = fig.add_subplot(1, 2, 2)
+ax.plot(x_arr, hist['accuracy'], '-o', label='Train acc.')
+ax.plot(x_arr, hist['val_accuracy'], '--<', label='Validation acc.')
+ax.legend(fontsize=15)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Accuracy')
+plt.title(print_results + ' ' +  recurrent_type + ' seq_length:' + str(max_seq_length) + ' bidirectional:' + str(bidirectional))
+plt.show()
