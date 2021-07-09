@@ -131,13 +131,13 @@ bi_lstm_model.summary()
 bi_lstm_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
                       loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
                       metrics=['accuracy'])
-history = bi_lstm_model.fit(train_data, 
-                           validation_data=valid_data, 
-                           epochs=10)
+#history = bi_lstm_model.fit(train_data, 
+#                           validation_data=valid_data, 
+#                           epochs=10)
 
 ## テストデータで評価
-test_results = bi_lstm_model.evaluate(test_data)
-print('Test Acc.: {:.2f}%'.format(test_results[1]*100))
+#test_results = bi_lstm_model.evaluate(test_data)
+#print('Test Acc.: {:.2f}%'.format(test_results[1]*100))
 
 from collections import Counter
 
@@ -224,9 +224,9 @@ def build_rnn_model(embedding_dim,
 
 batch_size = 32
 embedding_dim = 20
-max_seq_length = 100
+max_seq_length = None
 recurrent_type = "SimpleRNN"
-bidirectional = True
+bidirectional = False
 train_data, valid_data, test_data, n = preprocess_datasets(ds_raw_train, 
                                                            ds_raw_valid, 
                                                            ds_raw_test,
@@ -237,7 +237,7 @@ vocab_size = n + 2
 
 rnn_model = build_rnn_model(embedding_dim, 
                             vocab_size, 
-                            recurrent_type='SimpleRNN',
+                            recurrent_type=recurrent_type,
                             bidirectional=bidirectional)
 rnn_model.summary()
 
